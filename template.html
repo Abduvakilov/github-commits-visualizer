@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<!-- https://gist.github.com/d3noob/7bf95c7ac092db2fe31a979b926b91b8 -->
+<style> /* set the CSS */
+body { font: 12px Arial;}
+
+path { 
+    stroke: steelblue;
+    stroke-width: 2;
+    fill: none;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: grey;
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+}
+
+.legend {
+    font-size: 16px;
+    font-weight: bold;
+    text-anchor: middle;
+}
+
+</style>
+<body>
+
+<!-- load the d3.js library -->    
+<script src="https://d3js.org/d3.v5.min.js"></script><script>
+
+var data = [{"author_name":"github-actions","date":"21-04-07","commit_count":1},{"author_name":"github-actions[bot]","date":"21-04-07","commit_count":1},{"author_name":"github-actions","date":"21-03-27","commit_count":11},{"author_name":"Shucai.wang","date":"21-03-27","commit_count":3},{"author_name":"Sebastián Ramírez","date":"21-03-27","commit_count":4},{"author_name":"Xie Wei","date":"21-03-27","commit_count":1},{"author_name":"mode","date":"21-03-27","commit_count":1},{"author_name":"Spike","date":"21-03-27","commit_count":2},{"author_name":"lpdswing","date":"21-03-27","commit_count":1},{"author_name":"github-actions","date":"21-03-01","commit_count":2},{"author_name":"Sebastián Ramírez","date":"21-03-01","commit_count":1},{"author_name":"github-actions[bot]","date":"21-03-01","commit_count":1}]
+
+// Set the dimensions of the canvas / graph
+var margin = {top: 30, right: 20, bottom: 70, left: 50},
+    width = 900 - margin.left - margin.right,
+    height = 600 - margin.top - margin.bottom;
+
+// Parse the date / time
+// var parseDate = d3.timeParse("%y-%b-%d");
+
+// Set the ranges
+var x = d3.scaleTime().range([0, width]);  
+var y = d3.scaleLinear().range([height, 0]);
+
+// Define the line
+var commitCountLine = d3.line()
+    .x(function(d) { return x(d.date); })
+    .y(function(d) { return y(d.commit_count); })
+    .curve(d3.curveBasis);
+
+
+// Adds the svg canvas
+var svg = d3.select("body")
+    .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+        .attr("transform", 
+              "translate(" + margin.left + "," + margin.top + ")");
+
+// Get the data
+
+
+data.forEach(function(d) {
+    d.date = new Date(d.date);
+    d.commit_count = +d.commit_count;
+});
+
+// Scale the range of the data
+x.domain(d3.extent(data, function(d) { return d.date; }));
+y.domain([0, d3.max(data, function(d) { return d.commit_count; })]);
+
+// Nest the entries by author_name
+var dataNest = d3.nest()
+    .key(function(d) {return d.author_name;})
+    .entries(data);
+
+// set the colour scale
+var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+legendSpace = width/dataNest.length; // spacing for the legend
+
+// Loop through each author_name / key
+dataNest.forEach(function(d,i) { 
+
+    svg.append("path")
+        .attr("class", "line")
+        .style("stroke", function() { // Add the colours dynamically
+            return d.color = color(d.key); })
+        .attr("d", commitCountLine(d.values));
+
+    // Add the Legend
+    svg.append("text")
+        .attr("x", (legendSpace/2)+i*legendSpace)  // space legend
+        .attr("y", height + (margin.bottom/2)+ 5)
+        .attr("class", "legend")    // style the legend
+        .style("fill", function() { // Add the colours dynamically
+            return d.color = color(d.key); })
+        .text(d.key); 
+
+});
+
+// Add the X Axis
+svg.append("g")
+  .attr("class", "axis")
+  .attr("transform", "translate(0," + height + ")")
+  .call(d3.axisBottom(x));
+
+// Add the Y Axis
+svg.append("g")
+  .attr("class", "axis")
+  .call(d3.axisLeft(y));
+
+// gridlines in y axis function
+function make_y_gridlines() {       
+    return d3.axisLeft(y)
+        .ticks(6)
+}
+
+// add the Y gridlines
+svg.append("g")         
+    .attr("class", "axis")
+    .call(make_y_gridlines()
+      .tickSize(-width)
+      .tickFormat('')
+    );
+</script>
+</body>
